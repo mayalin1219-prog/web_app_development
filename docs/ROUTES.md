@@ -1,71 +1,75 @@
-# 路由與頁面設計文件 (API Design)
+# 路由設計文件 (Routes Design)
 
-本文件規劃了「食譜收藏系統」所有提供給使用者的頁面端點，包含路由定義、傳遞邏輯以及使用的 Jinja2 模板。
+本文件根據產品需求文件 (PRD)、系統架構設計 (ARCHITECTURE) 與資料庫設計 (DB_DESIGN)，規劃「食譜收藏系統」的路由結構與頁面流程。
 
 ## 1. 路由總覽表格
 
-| 功能 | HTTP 方法 | URL 路徑 | 對應模板 | 說明 |
+| 功能模組 | HTTP 方法 | URL 路徑 | 對應模板 | 說明 |
 | --- | --- | --- | --- | --- |
-| **首頁/列表** | `GET` | `/` | `index.html` | 顯示最新上架的系統內食譜列表。 |
-| **搜尋/推薦** | `GET` | `/search` | `search.html` | 處理 query string `?q=` 或 `?ingredients=` 來進行菜單過濾。 |
-| **新增頁面** | `GET` | `/recipes/create` | `recipes/create.html` | 顯示包含新增食譜資訊的表單。 |
-| **建立食譜** | `POST` | `/recipes/create` | — | 接收並確認表單結果，加入 DB 後重導向至 `/`。 |
-| **食譜詳情** | `GET` | `/recipes/<id>` | `recipes/detail.html` | 顯示特定食譜內容與所需食材清單。 |
-| **採購清單** | `GET` | `/recipes/<id>/shopping-list`| `recipes/shopping_list.html`| 自動依據指定食譜產出所需採購的清單。 |
-| **編輯頁面** | `GET` | `/recipes/<id>/edit` | `recipes/edit.html` | 送回並預填原始食譜資訊供使用者修改。 |
-| **更新食譜** | `POST`| `/recipes/<id>/update` | — | 接收已修改的表單，寫入資料庫後導向到詳情頁。 |
-| **刪除食譜** | `POST`| `/recipes/<id>/delete` | — | 刪除單個食譜後，重導向回到首頁。 |
+| 首頁 (食譜列表) | GET | `/` | `index.html` | 顯示所有食譜列表（可分頁或全部顯示） |
+| 食譜詳情 | GET | `/recipes/<int:id>` | `detail.html` | 顯示單筆食譜詳細資訊（含步驟、食材、標籤） |
+| 新增食譜頁面 | GET | `/recipes/new` | `form.html` | 顯示建立食譜表單 |
+| 建立食譜 | POST | `/recipes` | — | 接收表單資料，存入 DB，完成後重導向至首頁或詳情頁 |
+| 編輯食譜頁面 | GET | `/recipes/<int:id>/edit` | `form.html` | 顯示編輯食譜表單（預先填入舊資料） |
+| 更新食譜 | POST | `/recipes/<int:id>/update` | — | 接收表單資料，更新 DB，完成後重導向至詳情頁 |
+| 刪除食譜 | POST | `/recipes/<int:id>/delete` | — | 刪除指定食譜，完成後重導向至首頁 |
+| 搜尋與推薦頁面 | GET | `/search` | `search.html` | 顯示關鍵字搜尋或食材推薦的表單與結果 |
+| 標籤列表 | GET | `/tags` | `tags.html` | 顯示所有標籤列表 |
+| 新增標籤 | POST | `/tags` | — | 接收表單建立新標籤 |
+| 刪除標籤 | POST | `/tags/<int:id>/delete` | — | 刪除指定標籤 |
+| 採購清單 | GET | `/shopping-list` | `shopping_list.html` | 根據使用者加入的食譜，自動生成並顯示所需食材採購清單 |
 
----
+## 2. 每個路由的詳細說明
 
-## 2. 路由詳細說明 (Route Details)
+### 首頁 (食譜列表)
+- **輸入**: 無 (可選的 `page` 查詢參數)
+- **處理邏輯**: 呼叫 `Recipe` Model 獲取食譜清單，若有分頁需求則進行分頁處理。
+- **輸出**: 渲染 `index.html`
+- **錯誤處理**: 若無資料，於畫面顯示「目前尚無食譜，請新增第一筆」。
 
-### 2.1 主模組 (Main Blueprint)
+### 新增/編輯/刪除食譜 (Recipe CRUD)
+- **輸入**: 
+  - 表單欄位：`title`, `description`, `steps`, `image` (檔案上傳), `ingredients` (動態欄位), `tags`。
+  - URL 參數：`id` (編輯/刪除時)。
+- **處理邏輯**: 
+  - 新增/更新：驗證必填欄位 (title, steps)，處理圖片上傳並儲存至 `static/uploads/`，建立或更新 `Recipe`, `Ingredient`, `Tag` 以及關聯表。
+  - 刪除：從 `Recipe` 表刪除該筆資料，並刪除對應關聯與實體圖片檔案。
+- **輸出**:
+  - GET: 渲染 `form.html`
+  - POST: 重導向至 `/` 或 `/recipes/<id>`
+- **錯誤處理**: 表單驗證失敗時，附帶錯誤訊息並重新渲染 `form.html`。若請求不存在的 `id`，回傳 404 頁面。
 
-#### `GET /`
-- **處理邏輯**：呼叫 `Recipe.get_all()` 取得資料庫中按時間倒序排列的食譜。
-- **輸出**：渲染 `index.html`。
+### 搜尋與推薦
+- **輸入**: URL Query String 包含 `keyword` (搜尋菜名/描述) 或 `ingredients` (逗號分隔的食材名)。
+- **處理邏輯**: 根據提供的參數查詢 `Recipe` 與 `Ingredient` 關聯。若是食材反查，則找出包含目標食材的食譜。
+- **輸出**: 渲染 `search.html` 顯示結果。
+- **錯誤處理**: 未提供參數則顯示空表單；查無結果則顯示提示訊息。
 
-#### `GET /search`
-- **輸入**：URL 參數 `q` (菜名關鍵字) 或 `ingredients` (逗號分隔的現有食材)。
-- **處理邏輯**：判斷若有 `ingredients` 就過濾出 `RecipeIngredient` 符合的食譜，按匹配度排序；若是 `q` 則單純做標題 `LIKE` 搜尋。
-- **輸出**：渲染 `search.html`。
+### 標籤管理
+- **輸入**: 表單欄位 `name`。
+- **處理邏輯**: 新增或刪除 `Tag`，刪除時同時清除 `RECIPE_TAGS` 中的關聯。
+- **輸出**: GET 渲染 `tags.html`，POST 重導向至 `/tags`。
 
-### 2.2 食譜模組 (Recipes Blueprint)
-
-#### `GET /recipes/create` 與 `POST /recipes/create`
-- **輸入 (POST)**：表單資料 `title`, `steps`, `description`, `image`, 及一組 `ingredients` (包含名稱、量、單位)。
-- **處理邏輯**：驗證欄位是否空白。處置上傳圖片至 `static/uploads/` 取回檔名。呼叫 Model 將 `Recipe` 與 `Ingredient` 相關聯一併儲存。
-- **輸出**：成功後重導向至 `url_for('main.index')`，若驗證失敗則重新渲染 `recipes/create.html` 並給予 Flash 錯誤訊息。
-
-#### `GET /recipes/<id>`
-- **輸入**：路徑參數 `<id>`。
-- **處理邏輯**：呼叫 `Recipe.get_by_id(id)`，若找不到拋出 404，否則匯總資料傳送至模板。
-- **輸出**：渲染 `recipes/detail.html`。
-
-#### `GET /recipes/<id>/shopping-list`
-- **輸入**：路徑參數 `<id>`。
-- **處理邏輯**：藉由關聯查詢 `recipe.ingredients` 將配料轉換為購買清單格式。
-- **輸出**：渲染 `recipes/shopping_list.html`。
-
-#### `GET /recipes/<id>/edit` 與 `POST /recipes/<id>/update`
-- **輸入**：修改過後的表單文字，原圖片或新圖片。
-- **處理邏輯**：讀出原始料理，如為 POST 則覆蓋並寫入。
-- **輸出**：重導向至 `url_for('recipes.detail', id=id)`。
-
-#### `POST /recipes/<id>/delete`
-- **處理邏輯**：確認收到發送的請求後從 DB 刪除對應 ID 的紀錄。
-- **輸出**：重導向至 `url_for('main.index')`。
-
----
+### 採購清單
+- **輸入**: 使用者在 Session 或 DB 中儲存的「待採買食譜清單」。
+- **處理邏輯**: 查詢所有選定食譜的食材與用量，將相同食材的用量加總（若單位可換算）。
+- **輸出**: 渲染 `shopping_list.html`。
 
 ## 3. Jinja2 模板清單
 
-將建立於 `app/templates/` 內：
-1. `base.html` : 所有頁面的母版（Navbar、底圖、與 CSS/JS 引用）。
-2. `index.html` : 繼承 `base.html`，首頁網格排列的食譜預覽卡片。
-3. `search.html` : 繼承 `base.html`，類似於 `index.html` 但是會有查詢標頭。
-4. `recipes/create.html` : 繼承 `base.html`，填詞新增表單。
-5. `recipes/edit.html` : 繼承 `base.html`，覆用修改表單。
-6. `recipes/detail.html` : 繼承 `base.html`，圖文並茂地展出料理步驟與圖片。
-7. `recipes/shopping_list.html` : 繼承 `base.html`，單純的條列式待買清單。
+- `templates/base.html`: 共用版型（包含 Header、Footer、導覽列）。
+- `templates/index.html`: 繼承 `base.html`，食譜列表首頁。
+- `templates/detail.html`: 繼承 `base.html`，單筆食譜詳情頁。
+- `templates/form.html`: 繼承 `base.html`，食譜的新增與編輯共用表單。
+- `templates/search.html`: 繼承 `base.html`，搜尋表單與結果呈現。
+- `templates/tags.html`: 繼承 `base.html`，標籤管理介面。
+- `templates/shopping_list.html`: 繼承 `base.html`，採購清單顯示頁。
+
+## 4. 路由骨架程式碼結構
+
+已經在 `app/routes/` 目錄建立對應模組的 Python 檔案骨架：
+- `app/routes/recipes.py` (處理食譜 CRUD)
+- `app/routes/search.py` (處理搜尋與推薦)
+- `app/routes/tags.py` (處理標籤管理)
+- `app/routes/shopping_list.py` (處理採購清單)
+- `app/routes/main.py` (處理首頁)

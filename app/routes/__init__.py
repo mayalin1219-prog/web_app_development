@@ -1,10 +1,18 @@
-from flask import Blueprint
+# app/routes/__init__.py
+# 初始化路由模組，此處可匯出各個 blueprints 以供 app.py 註冊
 
-# 將會在此建立這兩個藍圖
-# 我們會在 app.py 中註冊： 
-# app.register_blueprint(main_bp)
-# app.register_blueprint(recipes_bp, url_prefix='/recipes')
-
-# 此處不直接實例化，由內部模組自行 expose
 from .main import main_bp
 from .recipes import recipes_bp
+from .search import search_bp
+from .tags import tags_bp
+from .shopping_list import shopping_list_bp
+
+def register_blueprints(app):
+    """
+    將所有 Blueprint 註冊至 Flask app
+    """
+    app.register_blueprint(main_bp)
+    app.register_blueprint(recipes_bp)
+    app.register_blueprint(search_bp)
+    app.register_blueprint(tags_bp)
+    app.register_blueprint(shopping_list_bp)

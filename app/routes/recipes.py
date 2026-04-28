@@ -1,57 +1,61 @@
-from flask import Blueprint, request, render_template, redirect, url_for, flash
-# from app.models import Recipe, Ingredient
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 
 recipes_bp = Blueprint('recipes', __name__)
 
-@recipes_bp.route('/create', methods=['GET', 'POST'])
-def create():
+@recipes_bp.route('/recipes/new')
+def new_recipe():
     """
-    HTTP Method: GET, POST
-    GET: 呈現新增食譜表單。
-    POST: 接收欄位 (title, steps, ingredients, image)，儲存至資料庫並重導向至首頁。
-    渲染: recipes/create.html
+    顯示新增食譜表單
+    - 渲染 form.html
     """
     pass
 
-@recipes_bp.route('/<int:recipe_id>', methods=['GET'])
-def detail(recipe_id):
+@recipes_bp.route('/recipes', methods=['POST'])
+def create_recipe():
     """
-    HTTP Method: GET
-    顯示單一食譜的內容、圖片、所有必要食材。若 id 找不到則 404。
-    渲染: recipes/detail.html
-    """
-    pass
-
-@recipes_bp.route('/<int:recipe_id>/shopping-list', methods=['GET'])
-def shopping_list(recipe_id):
-    """
-    HTTP Method: GET
-    從食譜中提取需要的食材份數，幫助使用者列印或檢視採購清單。
-    渲染: recipes/shopping_list.html
+    建立新食譜
+    - 接收表單資料 (包含 title, steps, ingredients, tags, image)
+    - 處理圖片上傳
+    - 將資料存入資料庫
+    - 成功後重導向至首頁或該食譜詳情頁
     """
     pass
 
-@recipes_bp.route('/<int:recipe_id>/edit', methods=['GET'])
-def edit(recipe_id):
+@recipes_bp.route('/recipes/<int:id>')
+def detail(id):
     """
-    HTTP Method: GET
-    提供表單給使用者修改先前的食譜內容。
-    渲染: recipes/edit.html
-    """
-    pass
-
-@recipes_bp.route('/<int:recipe_id>/update', methods=['POST'])
-def update(recipe_id):
-    """
-    HTTP Method: POST
-    接收來自編輯表單的資料，覆蓋掉原有的 Recipe Model 後儲存。
+    顯示單筆食譜詳情
+    - 根據 id 查詢食譜及其關聯之食材與標籤
+    - 渲染 detail.html
     """
     pass
 
-@recipes_bp.route('/<int:recipe_id>/delete', methods=['POST'])
-def delete(recipe_id):
+@recipes_bp.route('/recipes/<int:id>/edit')
+def edit_recipe(id):
     """
-    HTTP Method: POST
-    從系統中刪除此食譜，結束後返回首頁。
+    顯示編輯食譜表單
+    - 根據 id 查詢食譜資料並預先填入表單
+    - 渲染 form.html
+    """
+    pass
+
+@recipes_bp.route('/recipes/<int:id>/update', methods=['POST'])
+def update_recipe(id):
+    """
+    更新指定食譜
+    - 接收表單資料
+    - 處理圖片更新 (若有)
+    - 更新資料庫紀錄
+    - 成功後重導向至食譜詳情頁
+    """
+    pass
+
+@recipes_bp.route('/recipes/<int:id>/delete', methods=['POST'])
+def delete_recipe(id):
+    """
+    刪除指定食譜
+    - 根據 id 從資料庫移除紀錄及其關聯
+    - 刪除對應的圖片檔案
+    - 成功後重導向至首頁
     """
     pass
