@@ -1,4 +1,4 @@
--- 建表語法：食譜收藏系統 SQLite 資料庫結構
+-- database/schema.sql
 
 CREATE TABLE recipes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -21,8 +21,8 @@ CREATE TABLE recipe_ingredients (
     ingredient_id INTEGER NOT NULL,
     quantity REAL,
     unit TEXT,
-    FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE,
-    FOREIGN KEY (ingredient_id) REFERENCES ingredients(id) ON DELETE CASCADE
+    FOREIGN KEY(recipe_id) REFERENCES recipes(id),
+    FOREIGN KEY(ingredient_id) REFERENCES ingredients(id)
 );
 
 CREATE TABLE tags (
@@ -33,7 +33,7 @@ CREATE TABLE tags (
 CREATE TABLE recipe_tags (
     recipe_id INTEGER NOT NULL,
     tag_id INTEGER NOT NULL,
-    PRIMARY KEY (recipe_id, tag_id),
-    FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE,
-    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+    PRIMARY KEY(recipe_id, tag_id),
+    FOREIGN KEY(recipe_id) REFERENCES recipes(id),
+    FOREIGN KEY(tag_id) REFERENCES tags(id)
 );

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white pb-0 border-bottom-0">
+                <h3 class="mt-2">{{ '編輯食譜' if recipe else '新增食譜' }}</h3>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('recipes.update_recipe', id=recipe.id) if recipe else url_for('recipes.create_recipe') }}" method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">食譜名稱 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="title" name="title" value="{{ recipe.title if recipe else '' }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">簡短描述</label>
+                        <textarea class="form-control" id="description" name="description" rows="2">{{ recipe.description if recipe else '' }}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="steps" class="form-label">烹調步驟 <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="steps" name="steps" rows="6" required>{{ recipe.steps if recipe else '' }}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="image" class="form-label">食譜照片</label>
+                        <input class="form-control" type="file" id="image" name="image" accept="image/*">
+                        {% if recipe and recipe.image_path %}
+                            <div class="mt-2">
+                                <small class="text-muted">目前圖片：{{ recipe.image_path }}</small>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('recipes.detail', id=recipe.id) if recipe else url_for('main.index') }}" class="btn btn-outline-secondary">取消</a>
+                        <button type="submit" class="btn btn-primary">{{ '儲存變更' if recipe else '新增食譜' }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
